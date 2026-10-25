@@ -426,3 +426,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# 飞牛构建产物
+*.fpk
+src/fn/app/docker/rootfs.tar

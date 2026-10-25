@@ -57,4 +57,4 @@ jobs:
       - name: Upload fn package
         uses: softprops/action-gh-release@v3
         with:
-          files: fuji-autosave.fpk
+          files: artifacts/*.fpk

@@ -1,5 +1,5 @@
 appname=fuji-autosave
-version=1.0.1
+version=1.0.2-test.1
 display_name=富士同步
 desc="""富士同步用于在局域网内自动接收并备份富士相机通过 Wi‑Fi 发送的照片文件，让你无需依赖官方软件，也不必再频繁插拔相机的 SD 卡，就能在飞牛上实现稳定、高效、全自动的无线备份体验。
 <strong>使用说明<strong>
@@ -12,7 +12,8 @@ platform=x86
 source=thirdparty
 maintainer=Varorbc
 maintainer_url=https://github.com/Varorbc/FujiAutoSave
-distributor=Varorbc
-distributor_url=https://github.com/Varorbc/FujiAutoSave
+distributor=ddhap
+distributor_url=https://github.com/ddhap/FujiAutoSave
+os_min_version=1.2.0
 service_port=51541
-changelog=修复设备重启后无法同步问题
+changelog=测试版：修复 X-T30 II 型号注册解析，内置运行文件，使用主机网络，安装时选择备份目录。

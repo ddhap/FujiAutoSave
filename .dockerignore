@@ -22,6 +22,8 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 LICENSE
+artifacts
+**/rootfs.tar
 README.md
 !**/.gitignore
 !.git/HEAD

@@ -18,7 +18,7 @@ internal static partial class AutoSaveMessageFactory
         $@"^REGISTER (?<{nameof(RegisterMessage.Target)}>\S+) HTTP/(?<{nameof(RegisterMessage.HttpVersion)}>\d+\.\d+)\r\n" +
         $@"HOST:(?<{nameof(RegisterMessage.Host)}>\d+\.\d+\.\d+\.\d+):(?<{nameof(RegisterMessage.Port)}>\d+)\r\n" +
         $@"DSCNAME:(?<{nameof(RegisterMessage.Name)}>[A-Za-z0-9\-]+)\r\n" +
-        $@"DSCMODEL:(?<{nameof(RegisterMessage.Model)}>[A-Za-z0-9\-]+)\r\n$",
+        $@"DSCMODEL:(?:\x22(?<{nameof(RegisterMessage.Model)}>[^\x22\r\n]+)\x22|(?<{nameof(RegisterMessage.Model)}>[^\x22\r\n]+))\r\n(?:\r\n)*\z",
         RegexOptions.Compiled)]
     private static partial Regex RegisterRegex();
 

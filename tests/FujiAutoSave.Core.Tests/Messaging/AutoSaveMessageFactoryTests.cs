@@ -74,6 +74,37 @@ public sealed class AutoSaveMessageFactoryTests
     }
 
     [Theory]
+    [InlineData("\"X-T30 II\"", "\r\n")]
+    [InlineData("\"X-T30 II\"", "\r\n\r\n")]
+    [InlineData("X-T30 II", "\r\n")]
+    public void ParseRegister_WithXT30II_ShouldParseSuccessfully(string model, string ending)
+    {
+        var message = $"REGISTER * HTTP/1.1\r\nHOST:192.0.2.10:51542\r\nDSCNAME:FUJIFILM\r\nDSCMODEL:{model}{ending}";
+
+        var result = AutoSaveMessageFactory.ParseRegister(message);
+
+        Assert.NotNull(result);
+        Assert.Equal("X-T30 II", result.Model);
+        Assert.Equal("FUJIFILM", result.Name);
+        Assert.Equal(IPAddress.Parse("192.0.2.10"), result.Host);
+        Assert.Equal(51542, result.Port);
+        Assert.Equal("*", result.Target);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\"\"")]
+    [InlineData("\"X-T30 II")]
+    [InlineData("X-T30 II\"")]
+    [InlineData("X-T30 II\r\nINJECTED:value")]
+    public void ParseRegister_WithInvalidModel_ShouldReturnNull(string model)
+    {
+        var message = $"REGISTER * HTTP/1.1\r\nHOST:192.0.2.10:51542\r\nDSCNAME:FUJIFILM\r\nDSCMODEL:{model}\r\n";
+
+        Assert.Null(AutoSaveMessageFactory.ParseRegister(message));
+    }
+
+    [Theory]
     [InlineData("IMPORT /guest HTTP/1.1\r\nHOST:192.168.137.1:51541\r\nDSCNAME:FUJIFILM-X-S10-0EA7\r\nDSCPORT:\r\n")]
     [InlineData("IMPORT /guest HTTP/1.1\r\nHOST:192.168.137.1:51541\r\nDSCNAME:FUJIFILM-X-S10-0EA7\r\nDSCPORT:\r\n\r\n")]
     [InlineData("IMPORT /guest HTTP/1.1\r\nHOST:192.168.137.1:51541\r\nDSCNAME:FUJIFILM-X-S10-0EA7\r\nDSCPORT:?\r\n")]

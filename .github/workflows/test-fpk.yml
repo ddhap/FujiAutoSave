@@ -1,0 +1,29 @@
+name: 构建飞牛测试包
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["fix/xt30-ii-fpk"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: 运行回归测试
+        run: dotnet test --project tests/FujiAutoSave.Core.Tests/FujiAutoSave.Core.Tests.csproj -c Release
+      - uses: docker/setup-buildx-action@v4
+      - name: 构建包含修复程序的 FPK
+        run: bash scripts/build-fn.sh
+      - name: 上传可安装测试包
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuji-autosave-x86_64-fnos-1.2
+          path: artifacts/*.fpk
+          if-no-files-found: error

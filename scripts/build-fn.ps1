@@ -3,10 +3,7 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
 
-$Fnpack = Join-Path $Root "tools/fnpack"
-
-if ($IsLinux) {
-    chmod +x $Fnpack
+& bash (Join-Path $Root "scripts/build-fn.sh")
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
 }
-
-& $Fnpack build -d (Join-Path $Root "src/fn")

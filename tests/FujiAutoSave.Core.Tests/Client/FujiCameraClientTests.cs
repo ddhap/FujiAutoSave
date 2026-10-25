@@ -71,8 +71,10 @@ public sealed class FujiCameraClientTests
         Assert.Null(exception);
     }
 
-    [Fact]
-    public async Task RegisterAndConnect_WithSimulatedCamera_ShouldTriggerEvents()
+    [Theory]
+    [InlineData("FUJIFILM-X-S10-0EA7", "X-S10", "X-S10")]
+    [InlineData("FUJIFILM", "\"X-T30 II\"", "X-T30 II")]
+    public async Task RegisterAndConnect_WithSimulatedCamera_ShouldTriggerEvents(string cameraName, string wireModel, string expectedModel)
     {
         using var notifyListener = new TcpListener(IPAddress.Loopback, 0);
         notifyListener.Start();
@@ -101,15 +103,15 @@ public sealed class FujiCameraClientTests
 
         await SendDiscoverMessageAsync(client.DiscoverPort, "*");
 
-        await notifyTask;
+        await notifyTask.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         await Task.Delay(50, TestContext.Current.CancellationToken);
-        await SendRegisterMessageAsync(client.RegisterPort);
+        await SendRegisterMessageAsync(client.RegisterPort, cameraName, wireModel);
 
         var registerMessage = await discoveryTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         Assert.NotNull(registerMessage);
-        Assert.Equal("FUJIFILM-X-S10-0EA7", registerMessage.Name);
-        Assert.Equal("X-S10", registerMessage.Model);
+        Assert.Equal(cameraName, registerMessage.Name);
+        Assert.Equal(expectedModel, registerMessage.Model);
         Assert.Equal(IPAddress.Loopback, registerMessage.Host);
         Assert.Equal(3, registerMessage.MaxTimeout);
         Assert.Equal("*", registerMessage.Target);
@@ -127,18 +129,17 @@ public sealed class FujiCameraClientTests
 
         await SendDiscoverMessageAsync(client.ConnectPort, Environment.MachineName);
 
-        await notifyTask2;
+        await notifyTask2.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         await Task.Delay(50, TestContext.Current.CancellationToken);
-        await SendImportMessageAsync(client.ConnectPort);
+        await SendImportMessageAsync(client.ConnectPort, cameraName);
 
         var importMessage = await connectTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         Assert.NotNull(importMessage);
-        Assert.Equal("FUJIFILM-X-S10-0EA7", registerMessage.Name);
-        Assert.Equal("X-S10", registerMessage.Model);
-        Assert.Equal(IPAddress.Loopback, registerMessage.Host);
-        Assert.Equal(3, registerMessage.MaxTimeout);
-        Assert.Equal("*", registerMessage.Target);
+        Assert.Equal(cameraName, importMessage.Name);
+        Assert.Equal(IPAddress.Loopback, importMessage.Host);
+        Assert.Equal(3, importMessage.MaxTimeout);
+        Assert.Equal("/guest", importMessage.Target);
 
         client.StopConnection();
     }
@@ -148,14 +149,12 @@ public sealed class FujiCameraClientTests
         var discoverMessage = $"DISCOVER {target} HTTP/1.1\r\nMX:3\r\nHOST:127.0.0.255:\u0001\r\nDSCADDR:127.0.0.1\r\nSERVICE:PCAUTOSAVE/1.0\r\n";
 
         using var udpClient = new UdpClient();
-        udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, port));
         await udpClient.SendAsync(Encoding.ASCII.GetBytes(discoverMessage), new IPEndPoint(IPAddress.Loopback, port));
     }
 
-    private static async Task SendRegisterMessageAsync(int port)
+    private static async Task SendRegisterMessageAsync(int port, string cameraName, string model)
     {
-        var registerMessage = "REGISTER * HTTP/1.1\r\nHOST:192.168.137.1:51542\r\nDSCNAME:FUJIFILM-X-S10-0EA7\r\nDSCMODEL:X-S10\r\n";
+        var registerMessage = $"REGISTER * HTTP/1.1\r\nHOST:192.168.137.1:51542\r\nDSCNAME:{cameraName}\r\nDSCMODEL:{model}\r\n";
 
         using var tcpClient = new TcpClient();
         await tcpClient.ConnectAsync(IPAddress.Loopback, port);
@@ -167,9 +166,9 @@ public sealed class FujiCameraClientTests
         await stream.WriteAsync(buffer);
     }
 
-    private static async Task SendImportMessageAsync(int port)
+    private static async Task SendImportMessageAsync(int port, string cameraName)
     {
-        var importMessage = "IMPORT /guest HTTP/1.1\r\nHOST:192.168.137.1:51541\r\nDSCNAME:FUJIFILM-X-S10-0EA7\r\nDSCPORT:?\r\n";
+        var importMessage = $"IMPORT /guest HTTP/1.1\r\nHOST:192.168.137.1:51541\r\nDSCNAME:{cameraName}\r\nDSCPORT:?\r\n";
 
         using var tcpClient = new TcpClient();
         await tcpClient.ConnectAsync(IPAddress.Loopback, port);
