@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using FujiAutoSave.Core.Enums;
 using FujiAutoSave.Core.PTP;
 
@@ -6,6 +7,78 @@ namespace FujiAutoSave.Core.Tests.PTP;
 
 public sealed class PtpPacketFactoryTests
 {
+    [Fact]
+    public void ParseImageInfo_With114ByteObjectInfo_ShouldParseSuccessfully()
+    {
+        var data = CreateObjectInfo("DSCF0001.JPG", "20261025T120000");
+        Assert.Equal(114, data.Length);
+
+        var result = PtpPacketFactory.ParseImageInfo(data);
+
+        Assert.Equal("DSCF0001.JPG", result.FileName);
+        Assert.Equal(new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero), result.CreateTime);
+    }
+
+    [Theory]
+    [InlineData("A.RAF", "")]
+    [InlineData("DSCF0001.MOV", "")]
+    [InlineData("DSCF0001.JPG", "unknown")]
+    public void ParseImageInfo_WithOptionalCaptureTime_ShouldKeepFileName(string fileName, string captureTime)
+    {
+        var result = PtpPacketFactory.ParseImageInfo(CreateObjectInfo(fileName, captureTime));
+
+        Assert.Equal(fileName, result.FileName);
+        Assert.Equal(DateTimeOffset.MinValue, result.CreateTime);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(52)]
+    [InlineData(53)]
+    [InlineData(78)]
+    [InlineData(79)]
+    [InlineData(110)]
+    public void ParseImageInfo_WithTruncatedFields_ShouldRejectPayload(int length)
+    {
+        var data = CreateObjectInfo("DSCF0001.JPG", "20261025T120000");
+
+        Assert.Throws<ArgumentException>(() => PtpPacketFactory.ParseImageInfo(data[..length]));
+    }
+
+    [Fact]
+    public void ParseImageInfo_WithEmptyFileName_ShouldRejectPayload()
+    {
+        Assert.Throws<ArgumentException>(() => PtpPacketFactory.ParseImageInfo(CreateObjectInfo("", "")));
+    }
+
+    [Fact]
+    public void ParseImageInfo_WithMissingStringTerminator_ShouldRejectPayload()
+    {
+        var data = CreateObjectInfo("DSCF0001.JPG", "20261025T120000");
+        data[77] = 1;
+
+        Assert.Throws<ArgumentException>(() => PtpPacketFactory.ParseImageInfo(data));
+    }
+
+    private static byte[] CreateObjectInfo(string fileName, string captureTime)
+    {
+        using var stream = new MemoryStream();
+        stream.Write(new byte[52]);
+        foreach (var value in new[] { fileName, captureTime, string.Empty, string.Empty })
+        {
+            if (value.Length == 0)
+            {
+                stream.WriteByte(0);
+                continue;
+            }
+
+            stream.WriteByte((byte)(value.Length + 1));
+            stream.Write(Encoding.Unicode.GetBytes(value + '\0'));
+        }
+
+        return stream.ToArray();
+    }
+
     [Fact]
     public void CreateInitPacket_FromDeviceNameAndHost_ShouldReturn82BytePacket()
     {

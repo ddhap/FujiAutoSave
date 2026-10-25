@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using FujiAutoSave.Core.Enums;
@@ -181,6 +182,8 @@ public sealed class FujiPtpSession(ILogger<FujiPtpSession> logger) : IFujiPtpSes
         logger.DownloadingImage(index);
 
         var totalBytesWritten = 0;
+        var startedAt = Stopwatch.GetTimestamp();
+        var lastReport = TimeSpan.Zero;
 
         while (true)
         {
@@ -196,6 +199,14 @@ public sealed class FujiPtpSession(ILogger<FujiPtpSession> logger) : IFujiPtpSes
 
             var bytesWritten = await ReadAndWritePartialImageDataAsync(outputStream, cancellationToken);
             totalBytesWritten += bytesWritten;
+            var elapsed = Stopwatch.GetElapsedTime(startedAt);
+            if (elapsed - lastReport >= TimeSpan.FromSeconds(5))
+            {
+                logger.DownloadProgress(index, totalBytesWritten, elapsed.TotalSeconds,
+                    totalBytesWritten / (1024d * 1024d) / elapsed.TotalSeconds);
+                lastReport = elapsed;
+            }
+
             if (bytesWritten == 0)
             {
                 break;

@@ -236,4 +236,7 @@ internal static partial class Logging
 
     [LoggerMessage(77, LogLevel.Information, "Partial image download cancelled by device")]
     public static partial void PartialImageDownloadCancelled(this ILogger logger);
+
+    [LoggerMessage(78, LogLevel.Information, "文件 {Index} 下载进度：{BytesWritten} 字节，耗时 {ElapsedSeconds:F1} 秒，平均 {MiBPerSecond:F2} MiB/s")]
+    public static partial void DownloadProgress(this ILogger logger, uint index, int bytesWritten, double elapsedSeconds, double miBPerSecond);
 }

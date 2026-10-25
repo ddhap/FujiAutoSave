@@ -19,8 +19,8 @@ internal static partial class Logging
     [LoggerMessage(105, LogLevel.Information, "Downloading image {FileName} to {Path}")]
     public static partial void DownloadingImage(this ILogger logger, string fileName, string path);
 
-    [LoggerMessage(106, LogLevel.Information, "Downloaded image {FileName} successfully")]
-    public static partial void DownloadedImage(this ILogger logger, string fileName);
+    [LoggerMessage(106, LogLevel.Information, "文件 {FileName} 下载成功，耗时 {ElapsedSeconds:F1} 秒，平均 {MiBPerSecond:F2} MiB/s")]
+    public static partial void DownloadedImage(this ILogger logger, string fileName, double elapsedSeconds, double miBPerSecond);
 
     [LoggerMessage(107, LogLevel.Warning, "Failed to download image {FileName}")]
     public static partial void FailedToDownloadImage(this ILogger logger, string fileName);

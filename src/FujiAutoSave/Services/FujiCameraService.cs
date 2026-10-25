@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using FujiAutoSave.Core;
 using FujiAutoSave.Core.Enums;
@@ -74,6 +75,7 @@ public sealed class FujiCameraService(ILogger<FujiCameraService> logger, IFujiPt
         logger.DownloadingImage(image.FileName, tempPath);
 
         await using var fileStream = File.Create(tempPath);
+        var startedAt = Stopwatch.GetTimestamp();
         var bytesWritten = await ptpSession.DownloadPartialImageAsync(imageIndex, fileStream, cancellationToken);
         if (bytesWritten < 0)
         {
@@ -98,7 +100,9 @@ public sealed class FujiCameraService(ILogger<FujiCameraService> logger, IFujiPt
         await fileStream.DisposeAsync();
         File.Move(tempPath, path);
 
-        logger.DownloadedImage(image.FileName);
+        var elapsedSeconds = Stopwatch.GetElapsedTime(startedAt).TotalSeconds;
+        logger.DownloadedImage(image.FileName, elapsedSeconds,
+            bytesWritten / (1024d * 1024d) / Math.Max(elapsedSeconds, 0.001));
     }
 
     private void Dispose(bool disposing)
